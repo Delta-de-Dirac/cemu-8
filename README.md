@@ -1,2 +1,2 @@
-# cemu-p8
-PICO-8 emulator in C
+# cemu-8
+CHIP-8 emulator in C
