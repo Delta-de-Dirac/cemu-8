@@ -173,6 +173,17 @@ int main(int argc, char * argv[]){
                             regV[x] = regV[x] & regV[y];
                             break;
                         }
+                        case 0x4: {
+                            uint16_t sum = (uint16_t)regV[x] + (uint16_t)regV[y];
+                            if (sum > 255){
+                                regV[0xF] = 1;
+                                regV[x] = (uint8_t)(sum&0xFF);
+                            } else {
+                                regV[0xF] = 0;
+                                regV[x] = (uint8_t)(sum&0xFF);
+                            }
+                            break;
+                        }
                         case 0x5: {
                             if (regV[x] > regV[y]){
                                 regV[0xF] = 1;
@@ -241,6 +252,12 @@ int main(int argc, char * argv[]){
                         }
                         case 0x1E: {
                             regI = regI + regV[x];
+                            break;
+                        }
+                        case 0x33: {
+                            memory[regI] = (regV[x]/100)%10;
+                            memory[regI+1] = (regV[x]/10)%10;
+                            memory[regI+2] = regV[x]%10;
                             break;
                         }
                         case 0x55: {
