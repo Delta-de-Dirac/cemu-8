@@ -27,6 +27,31 @@ uint32_t const max_rom_len = (0xFFF - 0x200 + 1);
 uint8_t awaitingKeyPress = 0;
 uint8_t pressedKey = 0x10;
 
+uint32_t const displayFPS = 60;
+uint32_t const instPerFrame = 10;
+
+float timeElapsed = 0;
+float timerTick   = 0;
+
+uint16_t const keyMap[16] = {
+    KEY_X,
+    KEY_A,
+    KEY_S,
+    KEY_D,
+    KEY_Q,
+    KEY_W,
+    KEY_E,
+    KEY_ONE,
+    KEY_TWO,
+    KEY_THREE,
+    KEY_Z,
+    KEY_C,
+    KEY_FOUR,
+    KEY_R,
+    KEY_F,
+    KEY_V
+};
+
 int main(int argc, char * argv[]){
     if (argc != 2) {
         printf("usage: ./cemu ROM_FILE\n");
@@ -37,7 +62,7 @@ int main(int argc, char * argv[]){
     srand(time(NULL));
 
     InitWindow(WIDTH*PIXEL_SIZE, HEIGHT*PIXEL_SIZE, "cemu");
-    SetTargetFPS(60);
+    SetTargetFPS(displayFPS);
 
     printf("Hello, CEMU-8!\n");
 
@@ -57,44 +82,22 @@ int main(int argc, char * argv[]){
     regPC = 0x200;
 
     while(!WindowShouldClose()) {
-        for(int k = 0; k < 10; k++){
+        for(uint32_t k = 0; k < instPerFrame; k++){
+            timeElapsed += 1.0/(displayFPS*instPerFrame);
+            timerTick += 1.0/(displayFPS*instPerFrame);
+            if (timerTick > 1.0/60.0) {
+                timerTick -= 1.0/60.0;
+                if (regDelay > 0) {
+                    regDelay -= 1;
+                }
+            }
+
             if (awaitingKeyPress) {
-                awaitingKeyPress = 0;
-                if (IsKeyDown(KEY_ONE)) {
-                    pressedKey = 0x1;
-                } else if (IsKeyDown(KEY_TWO)) {
-                    pressedKey = 0x2;
-                } else if (IsKeyDown(KEY_THREE)) {
-                    pressedKey = 0x3;
-                } else if (IsKeyDown(KEY_FOUR)) {
-                    pressedKey = 0xC;
-                } else if (IsKeyDown(KEY_Q)) {
-                    pressedKey = 0x4;
-                } else if (IsKeyDown(KEY_W)) {
-                    pressedKey = 0x5;
-                } else if (IsKeyDown(KEY_E)) {
-                    pressedKey = 0x6;
-                } else if (IsKeyDown(KEY_R)) {
-                    pressedKey = 0xD;
-                } else if (IsKeyDown(KEY_A)) {
-                    pressedKey = 0x7;
-                } else if (IsKeyDown(KEY_S)) {
-                    pressedKey = 0x8;
-                } else if (IsKeyDown(KEY_D)) {
-                    pressedKey = 0x9;
-                } else if (IsKeyDown(KEY_F)) {
-                    pressedKey = 0xE;
-                } else if (IsKeyDown(KEY_Z)) {
-                    pressedKey = 0xA;
-                } else if (IsKeyDown(KEY_X)) {
-                    pressedKey = 0x0;
-                } else if (IsKeyDown(KEY_C)) {
-                    pressedKey = 0xB;
-                } else if (IsKeyDown(KEY_V)) {
-                    pressedKey = 0xF;
-                } else {
-                    awaitingKeyPress = 1;
-                    continue;
+                for (int i = 0; i < 16; i++) {
+                    if (IsKeyDown(keyMap[i])) {
+                        pressedKey = i;
+                        awaitingKeyPress = 0;
+                    }
                 }
             }
 
@@ -237,9 +240,30 @@ int main(int argc, char * argv[]){
                     regV[0xF] = collision;
                     break;
                 }
+                /*
+                case 0xE:
+                    uint8_t x  = (inst & 0x0F00) >> 8;
+                    switch ((inst & 0x00FF)){
+                        case 0x9E: {
+                            break;
+                        }
+                        case 0xA1: {
+                            break;
+                        }
+                        default:
+                            printf("unknown inst: %04X\n", inst);
+                            return 4;
+                    }
+                    break;
+
+                */
                 case 0xF:{
                     uint8_t x  = (inst & 0x0F00) >> 8;
                     switch ((inst & 0x00FF)){
+                        case 0x07: {
+                            regV[x] = regDelay;
+                            break;
+                        }
                         case 0x0A: {
                             if (pressedKey == 0x10){
                                 awaitingKeyPress = 1;
@@ -248,6 +272,10 @@ int main(int argc, char * argv[]){
                                 regV[x] = pressedKey;
                                 pressedKey = 0x10;
                             }
+                            break;
+                        }
+                        case 0x15: {
+                            regDelay = regV[x];
                             break;
                         }
                         case 0x1E: {
