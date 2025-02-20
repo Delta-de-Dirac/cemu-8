@@ -88,9 +88,23 @@ int main(int argc, char * argv[]){
                 }
                 case 0x7: {
                     unsigned char x  = (inst & 0x0F00) >> 8;
-                    unsigned short kk  = (inst & 0x00FF) >> 0;
+                    unsigned char kk  = (inst & 0x00FF) >> 0;
                     regV[x] = regV[x] + kk;
 
+                    break;
+                }
+                case 0x8: {
+                    unsigned char x  = (inst & 0x0F00) >> 8;
+                    unsigned char y  = (inst & 0x00F0) >> 4;
+                    switch ((inst & 0x000F)){
+                        case 0x0: {
+                            regV[x] = regV[y];
+                            break;
+                        }
+                        default:
+                            printf("unknown inst: %04X\n", inst);
+                            return 4;
+                    }
                     break;
                 }
                 case 0xA:
@@ -104,13 +118,14 @@ int main(int argc, char * argv[]){
                     break;
                 }
                 case 0xD: {
-                    unsigned char x  = (inst & 0x0F00) >> 8;
-                    unsigned char y  = (inst & 0x00F0) >> 4;
+                    unsigned char x  = regV[(inst & 0x0F00) >> 8];
+                    unsigned char y  = regV[(inst & 0x00F0) >> 4];
                     unsigned char n  = (inst & 0x000F) >> 0;
                     unsigned char collision = 0;
                     for (unsigned char lin = 0; lin < n; lin++) {
-                        for (unsigned char col = 0; col < n; col++) {
-                            unsigned char pixel = (memory[regI+lin] >> col) & 1;
+                        for (unsigned char col = 0; col < 8; col++) {
+                            unsigned char memXshift = 7-col;
+                            unsigned char pixel = (memory[regI+lin] >> memXshift) & 1;
                             unsigned char displayX = (x + col) % 64;
                             unsigned char displayXshift = 63-displayX;
                             unsigned char displayY = (y + lin) % 32;
@@ -121,7 +136,7 @@ int main(int argc, char * argv[]){
                                     collision = 1;
                                 }
                                 else {
-                                    display[displayY] = display[displayY] | (1<<displayXshift);
+                                    display[displayY] = display[displayY] | ((long long unsigned)1<<displayXshift);
                                 }
                             }
                         }
@@ -137,12 +152,26 @@ int main(int argc, char * argv[]){
             regPC += 2;
         }
 
+        BeginDrawing();
         ClearBackground(BLACK);
-        for (int k = 0; k < HEIGHT; k++){
-            for (int j = 0; j < WIDTH; j++){
+        for (int lin = 0; lin < HEIGHT; lin++){
+            for (int col = 0; col < WIDTH; col++){
+                unsigned char displayX = col;
+                unsigned char displayXshift = 63-col;
+                unsigned char displayY = lin;
+                unsigned char displayPixel = (((display[displayY])>>displayXshift)&1);
+                if (displayPixel)
+                    DrawRectangle(
+                        PIXEL_SIZE*displayX,
+                        PIXEL_SIZE*displayY,
+                        PIXEL_SIZE,
+                        PIXEL_SIZE,
+                        WHITE
+                );
 
             }
         }
+        EndDrawing();
     }
 
     return 0;
