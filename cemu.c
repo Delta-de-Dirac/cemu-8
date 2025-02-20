@@ -1,27 +1,31 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
-
+#include <string.h>
+#include <stdint.h>
 
 #include <raylib.h>
 
-static int const PIXEL_SIZE = 10;
-static int const WIDTH      = 64;
-static int const HEIGHT     = 32;
+#define PIXEL_SIZE 10
+#define WIDTH 64
+#define HEIGHT 32
 
-unsigned long long display[32] = {0};
+uint64_t display[HEIGHT] = {0};
 
-unsigned char memory[4096] = {0};
+uint8_t memory[4096] = {0};
 
-unsigned char regV[16] = {0};
-unsigned short regI = 0;
-unsigned char regDelay = 0;
-unsigned char regSound = 0;
-unsigned short regPC = 0;
-unsigned short regSP = 0;
-unsigned short stack[16] = {0};
+uint8_t regV[16] = {0};
+uint16_t regI = 0;
+uint8_t regDelay = 0;
+uint8_t regSound = 0;
+uint16_t regPC = 0;
+uint16_t regSP = 0;
+uint16_t stack[16] = {0};
 
-long const max_rom_len = (0xFFF - 0x200 + 1);
+uint32_t const max_rom_len = (0xFFF - 0x200 + 1);
+
+uint8_t awaitingKeyPress = 0;
+uint8_t pressedKey = 0x10;
 
 int main(int argc, char * argv[]){
     if (argc != 2) {
@@ -40,7 +44,7 @@ int main(int argc, char * argv[]){
     printf("Loading file: \'%s\' into memory!\n", rom_file);
     FILE * fileptr = fopen(rom_file, "rb");
     fseek(fileptr, 0, SEEK_END);
-    long filelen = ftell(fileptr);
+    uint32_t filelen = ftell(fileptr);
     rewind(fileptr);
     if (filelen > max_rom_len) {
         printf("usage: ./cemu-8 ROM_FILE\n");
@@ -52,18 +56,82 @@ int main(int argc, char * argv[]){
     printf("Setting regPC to 0x200\n");
     regPC = 0x200;
 
-    while(!WindowShouldClose()){
+    while(!WindowShouldClose()) {
         for(int k = 0; k < 10; k++){
-            unsigned short const inst = (memory[regPC] << 8) | memory[regPC+1];
+            if (awaitingKeyPress) {
+                awaitingKeyPress = 0;
+                if (IsKeyDown(KEY_ONE)) {
+                    pressedKey = 0x1;
+                } else if (IsKeyDown(KEY_TWO)) {
+                    pressedKey = 0x2;
+                } else if (IsKeyDown(KEY_THREE)) {
+                    pressedKey = 0x3;
+                } else if (IsKeyDown(KEY_FOUR)) {
+                    pressedKey = 0xC;
+                } else if (IsKeyDown(KEY_Q)) {
+                    pressedKey = 0x4;
+                } else if (IsKeyDown(KEY_W)) {
+                    pressedKey = 0x5;
+                } else if (IsKeyDown(KEY_E)) {
+                    pressedKey = 0x6;
+                } else if (IsKeyDown(KEY_R)) {
+                    pressedKey = 0xD;
+                } else if (IsKeyDown(KEY_A)) {
+                    pressedKey = 0x7;
+                } else if (IsKeyDown(KEY_S)) {
+                    pressedKey = 0x8;
+                } else if (IsKeyDown(KEY_D)) {
+                    pressedKey = 0x9;
+                } else if (IsKeyDown(KEY_F)) {
+                    pressedKey = 0xE;
+                } else if (IsKeyDown(KEY_Z)) {
+                    pressedKey = 0xA;
+                } else if (IsKeyDown(KEY_X)) {
+                    pressedKey = 0x0;
+                } else if (IsKeyDown(KEY_C)) {
+                    pressedKey = 0xB;
+                } else if (IsKeyDown(KEY_V)) {
+                    pressedKey = 0xF;
+                } else {
+                    awaitingKeyPress = 1;
+                    continue;
+                }
+            }
+
+            uint16_t const inst = (memory[regPC] << 8) | memory[regPC+1];
             switch (inst>>(3*4)) {
+                case 0x0: {
+                    switch ((inst & 0x00FF)){
+                        case 0xE0: {
+                            memset(display, (uint64_t)0, HEIGHT*sizeof(uint64_t));
+                            break;
+                        }
+                        case 0xEE: {
+                            regPC = stack[regSP-1];
+                            regSP -= 1;
+                            break;
+                        }
+                        default:
+                            printf("unknown inst: %04X\n", inst);
+                            return 4;
+                    }
+                    break;
+                }
                 case 0x1: {
-                    unsigned short nnn = (inst & 0x0FFF) >> 0;
+                    uint16_t nnn = (inst & 0x0FFF) >> 0;
+                    regPC = nnn-2;
+                    break;
+                }
+                case 0x2: {
+                    uint16_t nnn = (inst & 0x0FFF) >> 0;
+                    regSP += 1;
+                    stack[regSP-1] = regPC;
                     regPC = nnn-2;
                     break;
                 }
                 case 0x3: {
-                    unsigned char destReg = (inst & 0x0F00) >> 8;
-                    unsigned char cmpVal  =  inst & 0x00FF;
+                    uint8_t destReg = (inst & 0x0F00) >> 8;
+                    uint8_t cmpVal  =  inst & 0x00FF;
                     if (regV[destReg] == cmpVal) {
                         regPC += 2;
                     }
@@ -71,8 +139,8 @@ int main(int argc, char * argv[]){
                     break;
                 }
                 case 0x4: {
-                    unsigned char destReg = (inst & 0x0F00) >> 8;
-                    unsigned char cmpVal  =  inst & 0x00FF;
+                    uint8_t destReg = (inst & 0x0F00) >> 8;
+                    uint8_t cmpVal  =  inst & 0x00FF;
                     if (regV[destReg] != cmpVal) {
                         regPC += 2;
                     }
@@ -80,25 +148,39 @@ int main(int argc, char * argv[]){
                     break;
                 }
                 case 0x6: {
-                    unsigned char x  = (inst & 0x0F00) >> 8;
-                    unsigned char kk  = (inst & 0x00FF) >> 0;
+                    uint8_t x  = (inst & 0x0F00) >> 8;
+                    uint8_t kk  = (inst & 0x00FF) >> 0;
                     regV[x] = kk;
 
                     break;
                 }
                 case 0x7: {
-                    unsigned char x  = (inst & 0x0F00) >> 8;
-                    unsigned char kk  = (inst & 0x00FF) >> 0;
+                    uint8_t x  = (inst & 0x0F00) >> 8;
+                    uint8_t kk  = (inst & 0x00FF) >> 0;
                     regV[x] = regV[x] + kk;
 
                     break;
                 }
                 case 0x8: {
-                    unsigned char x  = (inst & 0x0F00) >> 8;
-                    unsigned char y  = (inst & 0x00F0) >> 4;
+                    uint8_t x  = (inst & 0x0F00) >> 8;
+                    uint8_t y  = (inst & 0x00F0) >> 4;
                     switch ((inst & 0x000F)){
                         case 0x0: {
                             regV[x] = regV[y];
+                            break;
+                        }
+                        case 0x2: {
+                            regV[x] = regV[x] & regV[y];
+                            break;
+                        }
+                        case 0x5: {
+                            if (regV[x] > regV[y]){
+                                regV[0xF] = 1;
+                                regV[x] = regV[x] - regV[y];
+                            } else {
+                                regV[0xF] = 0;
+                                regV[x] = regV[y] - regV[x];
+                            }
                             break;
                         }
                         default:
@@ -112,36 +194,71 @@ int main(int argc, char * argv[]){
                     break;
                 case 0xC: {
                     int const r = rand() & 0xFF;
-                    unsigned char destReg  = (inst & 0x0F00) >> 8;
-                    unsigned char instMask =  inst & 0x00FF;
+                    uint8_t destReg  = (inst & 0x0F00) >> 8;
+                    uint8_t instMask =  inst & 0x00FF;
                     regV[destReg] = instMask & r;
                     break;
                 }
                 case 0xD: {
-                    unsigned char x  = regV[(inst & 0x0F00) >> 8];
-                    unsigned char y  = regV[(inst & 0x00F0) >> 4];
-                    unsigned char n  = (inst & 0x000F) >> 0;
-                    unsigned char collision = 0;
-                    for (unsigned char lin = 0; lin < n; lin++) {
-                        for (unsigned char col = 0; col < 8; col++) {
-                            unsigned char memXshift = 7-col;
-                            unsigned char pixel = (memory[regI+lin] >> memXshift) & 1;
-                            unsigned char displayX = (x + col) % 64;
-                            unsigned char displayXshift = 63-displayX;
-                            unsigned char displayY = (y + lin) % 32;
-                            unsigned char displayPixel = (((display[displayY])>>displayXshift)&1);
+                    uint8_t Vx  = regV[(inst & 0x0F00) >> 8];
+                    uint8_t Vy  = regV[(inst & 0x00F0) >> 4];
+                    uint8_t n  = (inst & 0x000F) >> 0;
+                    uint8_t collision = 0;
+                    for (uint8_t lin = 0; lin < n; lin++) {
+                        for (uint8_t col = 0; col < 8; col++) {
+                            uint8_t memXshift = 7-col;
+                            uint8_t pixel = (memory[regI+lin] >> memXshift) & 1;
+                            uint8_t displayX = (Vx + col) % 64;
+                            uint8_t displayXshift = 63-displayX;
+                            uint8_t displayY = (Vy + lin) % 32;
+                            uint8_t displayPixel = (((display[displayY])>>displayXshift)&1);
                             if (pixel){
                                 if (displayPixel) {
-                                    display[displayY] = display[displayY] & (~(1<<displayXshift));
+                                    display[displayY] = display[displayY] & (~((uint64_t)1<<displayXshift));
                                     collision = 1;
                                 }
                                 else {
-                                    display[displayY] = display[displayY] | ((long long unsigned)1<<displayXshift);
+                                    display[displayY] = display[displayY] | ((uint64_t)1<<displayXshift);
                                 }
                             }
                         }
                     }
                     regV[0xF] = collision;
+                    break;
+                }
+                case 0xF:{
+                    uint8_t x  = (inst & 0x0F00) >> 8;
+                    switch ((inst & 0x00FF)){
+                        case 0x0A: {
+                            if (pressedKey == 0x10){
+                                awaitingKeyPress = 1;
+                                regPC -= 2;
+                            } else {
+                                regV[x] = pressedKey;
+                                pressedKey = 0x10;
+                            }
+                            break;
+                        }
+                        case 0x1E: {
+                            regI = regI + regV[x];
+                            break;
+                        }
+                        case 0x55: {
+                            for (int i = 0; i <= x; i++){
+                                memory[regI+i] = regV[i];
+                            }
+                            break;
+                        }
+                        case 0x65: {
+                            for (int i = 0; i <= x; i++){
+                                regV[i] = memory[regI+i];
+                            }
+                            break;
+                        }
+                        default:
+                            printf("unknown inst: %04X\n", inst);
+                            return 4;
+                    }
                     break;
                 }
                 default:
@@ -156,10 +273,10 @@ int main(int argc, char * argv[]){
         ClearBackground(BLACK);
         for (int lin = 0; lin < HEIGHT; lin++){
             for (int col = 0; col < WIDTH; col++){
-                unsigned char displayX = col;
-                unsigned char displayXshift = 63-col;
-                unsigned char displayY = lin;
-                unsigned char displayPixel = (((display[displayY])>>displayXshift)&1);
+                uint8_t displayX = col;
+                uint8_t displayXshift = 63-col;
+                uint8_t displayY = lin;
+                uint8_t displayPixel = (((display[displayY])>>displayXshift)&1);
                 if (displayPixel)
                     DrawRectangle(
                         PIXEL_SIZE*displayX,

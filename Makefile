@@ -8,7 +8,7 @@ LIBS = -lm -lraylib
 all: cemu
 
 run: cemu
-	./cemu ./c8games/MAZE
+	./cemu ./c8games/GUESS
 
 cemu: cemu.c
 	$(CC) $(CWARN) -O3 -o $@ $^ $(INCLUDE) $(INCLUDELIB) $(LIBS)
