@@ -3,7 +3,7 @@ CWARN = -Werror -Wall -Wextra -pedantic
 
 INCLUDE =
 INCLUDELIB =
-LIBS =
+LIBS = -lm -lraylib
 
 all: cemu
 

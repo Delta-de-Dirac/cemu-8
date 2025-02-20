@@ -2,6 +2,15 @@
 #include <time.h>
 #include <stdlib.h>
 
+
+#include <raylib.h>
+
+static int const PIXEL_SIZE = 10;
+static int const WIDTH      = 64;
+static int const HEIGHT     = 32;
+
+unsigned long long display[32] = {0};
+
 unsigned char memory[4096] = {0};
 
 unsigned char regV[16] = {0};
@@ -23,6 +32,9 @@ int main(int argc, char * argv[]){
 
     srand(time(NULL));
 
+    InitWindow(WIDTH*PIXEL_SIZE, HEIGHT*PIXEL_SIZE, "cemu");
+    SetTargetFPS(60);
+
     printf("Hello, CEMU-8!\n");
 
     printf("Loading file: \'%s\' into memory!\n", rom_file);
@@ -39,43 +51,98 @@ int main(int argc, char * argv[]){
 
     printf("Setting regPC to 0x200\n");
     regPC = 0x200;
-    while(1){
-        unsigned short const inst = (memory[regPC] << 8) | memory[regPC+1];
-        switch (inst>>12) {
-            case 0x3: {
-                unsigned char destReg = (inst & 0x0F00) >> 8;
-                unsigned char cmpVal  =  inst & 0x00FF;
-                if (regV[destReg] == cmpVal) {
-                    regPC += 2;
-                }
 
-                break;
-            }
-            case 0x4: {
-                unsigned char destReg = (inst & 0x0F00) >> 8;
-                unsigned char cmpVal  =  inst & 0x00FF;
-                if (regV[destReg] != cmpVal) {
-                    regPC += 2;
+    while(!WindowShouldClose()){
+        for(int k = 0; k < 10; k++){
+            unsigned short const inst = (memory[regPC] << 8) | memory[regPC+1];
+            switch (inst>>(3*4)) {
+                case 0x1: {
+                    unsigned short nnn = (inst & 0x0FFF) >> 0;
+                    regPC = nnn-2;
+                    break;
                 }
+                case 0x3: {
+                    unsigned char destReg = (inst & 0x0F00) >> 8;
+                    unsigned char cmpVal  =  inst & 0x00FF;
+                    if (regV[destReg] == cmpVal) {
+                        regPC += 2;
+                    }
 
-                break;
+                    break;
+                }
+                case 0x4: {
+                    unsigned char destReg = (inst & 0x0F00) >> 8;
+                    unsigned char cmpVal  =  inst & 0x00FF;
+                    if (regV[destReg] != cmpVal) {
+                        regPC += 2;
+                    }
+
+                    break;
+                }
+                case 0x6: {
+                    unsigned char x  = (inst & 0x0F00) >> 8;
+                    unsigned char kk  = (inst & 0x00FF) >> 0;
+                    regV[x] = kk;
+
+                    break;
+                }
+                case 0x7: {
+                    unsigned char x  = (inst & 0x0F00) >> 8;
+                    unsigned short kk  = (inst & 0x00FF) >> 0;
+                    regV[x] = regV[x] + kk;
+
+                    break;
+                }
+                case 0xA:
+                    regI = inst & 0x0FFF;
+                    break;
+                case 0xC: {
+                    int const r = rand() & 0xFF;
+                    unsigned char destReg  = (inst & 0x0F00) >> 8;
+                    unsigned char instMask =  inst & 0x00FF;
+                    regV[destReg] = instMask & r;
+                    break;
+                }
+                case 0xD: {
+                    unsigned char x  = (inst & 0x0F00) >> 8;
+                    unsigned char y  = (inst & 0x00F0) >> 4;
+                    unsigned char n  = (inst & 0x000F) >> 0;
+                    unsigned char collision = 0;
+                    for (unsigned char lin = 0; lin < n; lin++) {
+                        for (unsigned char col = 0; col < n; col++) {
+                            unsigned char pixel = (memory[regI+lin] >> col) & 1;
+                            unsigned char displayX = (x + col) % 64;
+                            unsigned char displayXshift = 63-displayX;
+                            unsigned char displayY = (y + lin) % 32;
+                            unsigned char displayPixel = (((display[displayY])>>displayXshift)&1);
+                            if (pixel){
+                                if (displayPixel) {
+                                    display[displayY] = display[displayY] & (~(1<<displayXshift));
+                                    collision = 1;
+                                }
+                                else {
+                                    display[displayY] = display[displayY] | (1<<displayXshift);
+                                }
+                            }
+                        }
+                    }
+                    regV[0xF] = collision;
+                    break;
+                }
+                default:
+                    printf("unknown inst: %04X\n", inst);
+                    return 3;
             }
-            case 0xA:
-                regI = inst & 0x0FFF;
-                break;
-            case 0xC: {
-                int const r = rand() & 0xFF;
-                unsigned char destReg  = (inst & 0x0F00) >> 8;
-                unsigned char instMask =  inst & 0x00FF;
-                regV[destReg] = instMask & r;
-                break;
-            }
-            default:
-                printf("unknown inst: %04X\n", inst);
-                return 3;
-                // code block
+            //printf("inst: %04X\n", inst);
+            regPC += 2;
         }
-        regPC += 2;
+
+        ClearBackground(BLACK);
+        for (int k = 0; k < HEIGHT; k++){
+            for (int j = 0; j < WIDTH; j++){
+
+            }
+        }
     }
 
     return 0;
