@@ -240,14 +240,19 @@ int main(int argc, char * argv[]){
                     regV[0xF] = collision;
                     break;
                 }
-                /*
-                case 0xE:
+                case 0xE:{
                     uint8_t x  = (inst & 0x0F00) >> 8;
                     switch ((inst & 0x00FF)){
                         case 0x9E: {
+                            if (IsKeyDown(keyMap[regV[x]])){
+                                regPC += 2;
+                            }
                             break;
                         }
                         case 0xA1: {
+                            if (!IsKeyDown(keyMap[regV[x]])){
+                                regPC += 2;
+                            }
                             break;
                         }
                         default:
@@ -255,8 +260,7 @@ int main(int argc, char * argv[]){
                             return 4;
                     }
                     break;
-
-                */
+                }
                 case 0xF:{
                     uint8_t x  = (inst & 0x0F00) >> 8;
                     switch ((inst & 0x00FF)){
@@ -279,6 +283,10 @@ int main(int argc, char * argv[]){
                             break;
                         }
                         case 0x1E: {
+                            regI = regI + regV[x];
+                            break;
+                        }
+                        case 0x29: {
                             regI = regI + regV[x];
                             break;
                         }
