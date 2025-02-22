@@ -321,6 +321,10 @@ int main(int argc, char * argv[]){
                             regV[x] = regV[x] & regV[y];
                             break;
                         }
+                        case 0x3: {
+                            regV[x] = regV[x] ^ regV[y];
+                            break;
+                        }
                         case 0x4: {
                             uint16_t sum = (uint16_t)regV[x] + (uint16_t)regV[y];
                             if (sum > 255){
