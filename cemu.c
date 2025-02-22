@@ -22,7 +22,26 @@ uint16_t regPC = 0;
 uint16_t regSP = 0;
 uint16_t stack[16] = {0};
 
-uint32_t const max_rom_len = (0xFFF - 0x200 + 1);
+uint32_t const maxRomLen           = (0xFFF - 0x200 + 1);
+uint16_t const programStartAddr    = 0x200;
+uint16_t const digitSpriteAddr[16] = {
+    0x000,
+    0x005,
+    0x00A,
+    0x00F,
+    0x014,
+    0x019,
+    0x01E,
+    0x023,
+    0x028,
+    0x02D,
+    0x032,
+    0x037,
+    0x03C,
+    0x041,
+    0x046,
+    0x04B
+};
 
 uint8_t awaitingKeyPress = 0;
 uint8_t pressedKey = 0x10;
@@ -71,16 +90,141 @@ int main(int argc, char * argv[]){
     fseek(fileptr, 0, SEEK_END);
     uint32_t filelen = ftell(fileptr);
     rewind(fileptr);
-    if (filelen > max_rom_len) {
+    if (filelen > maxRomLen) {
         printf("usage: ./cemu-8 ROM_FILE\n");
         return 2;
     }
-    fread(&memory[0x200], 1, filelen, fileptr);
+    fread(&memory[programStartAddr], 1, filelen, fileptr);
     fclose(fileptr);
+    
+    printf("Populating digits sprite data");
+    for (int i = 0; i < 16; i++){
+            switch(i){
+                case 0x0:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x90;
+                    memory[digitSpriteAddr[i]+2] = 0x90;
+                    memory[digitSpriteAddr[i]+3] = 0x90;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0x1:
+                    memory[digitSpriteAddr[i]+0] = 0x20;
+                    memory[digitSpriteAddr[i]+1] = 0x60;
+                    memory[digitSpriteAddr[i]+2] = 0x20;
+                    memory[digitSpriteAddr[i]+3] = 0x20;
+                    memory[digitSpriteAddr[i]+4] = 0x70;
+                    break;
+                case 0x2:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x10;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x80;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0x3:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x10;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x10;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0x4:
+                    memory[digitSpriteAddr[i]+0] = 0x90;
+                    memory[digitSpriteAddr[i]+1] = 0x90;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x10;
+                    memory[digitSpriteAddr[i]+4] = 0x10;
+                    break;
+                case 0x5:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x80;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x10;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0x6:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x80;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x90;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0x7:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x10;
+                    memory[digitSpriteAddr[i]+2] = 0x20;
+                    memory[digitSpriteAddr[i]+3] = 0x40;
+                    memory[digitSpriteAddr[i]+4] = 0x40;
+                    break;
+                case 0x8:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x90;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x90;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0x9:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x90;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x10;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0xA:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x90;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x90;
+                    memory[digitSpriteAddr[i]+4] = 0x90;
+                    break;
+                case 0xB:
+                    memory[digitSpriteAddr[i]+0] = 0xE0;
+                    memory[digitSpriteAddr[i]+1] = 0x90;
+                    memory[digitSpriteAddr[i]+2] = 0xE0;
+                    memory[digitSpriteAddr[i]+3] = 0x90;
+                    memory[digitSpriteAddr[i]+4] = 0xE0;
+                    break;
+                case 0xC:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x80;
+                    memory[digitSpriteAddr[i]+2] = 0x80;
+                    memory[digitSpriteAddr[i]+3] = 0x80;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0xD:
+                    memory[digitSpriteAddr[i]+0] = 0xE0;
+                    memory[digitSpriteAddr[i]+1] = 0x90;
+                    memory[digitSpriteAddr[i]+2] = 0x90;
+                    memory[digitSpriteAddr[i]+3] = 0x90;
+                    memory[digitSpriteAddr[i]+4] = 0xE0;
+                    break;
+                case 0xE:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x80;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x80;
+                    memory[digitSpriteAddr[i]+4] = 0xF0;
+                    break;
+                case 0xF:
+                    memory[digitSpriteAddr[i]+0] = 0xF0;
+                    memory[digitSpriteAddr[i]+1] = 0x80;
+                    memory[digitSpriteAddr[i]+2] = 0xF0;
+                    memory[digitSpriteAddr[i]+3] = 0x80;
+                    memory[digitSpriteAddr[i]+4] = 0x80;
+                    break;
+                default:
+                    printf("UNREACHABLE\n");
+                    return 10;
+                    break;
+        }
+    }
+    
+    
 
-    printf("Setting regPC to 0x200\n");
-    regPC = 0x200;
+    printf("Setting regPC to %04X\n", programStartAddr);
+    regPC = programStartAddr;
 
+    printf("Running program\n");
     while(!WindowShouldClose()) {
         for(uint32_t k = 0; k < instPerFrame; k++){
             timeElapsed += 1.0/(displayFPS*instPerFrame);
@@ -102,6 +246,7 @@ int main(int argc, char * argv[]){
             }
 
             uint16_t const inst = (memory[regPC] << 8) | memory[regPC+1];
+            //printf("[%04X] %04X\n", regPC, inst);
             switch (inst>>(3*4)) {
                 case 0x0: {
                     switch ((inst & 0x00FF)){
@@ -287,7 +432,7 @@ int main(int argc, char * argv[]){
                             break;
                         }
                         case 0x29: {
-                            regI = regI + regV[x];
+                            regI = digitSpriteAddr[regV[x]];
                             break;
                         }
                         case 0x33: {
