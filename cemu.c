@@ -376,7 +376,7 @@ int main(int argc, char * argv[]){
                                 regV[x] = regV[x] - regV[y];
                             } else {
                                 regV[0xF] = 0;
-                                regV[x] = regV[y] - regV[x];
+                                regV[x] = regV[x] - regV[y];
                             }
                             break;
                         }
