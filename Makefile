@@ -1,4 +1,5 @@
 CC = clang
+CCOPS = -std=gnu2x -O3 -o
 CWARN = -Werror -Wall -Wextra -pedantic
 
 INCLUDE =
@@ -7,14 +8,8 @@ LIBS = -lm -lraylib
 
 all: cemu
 
-run: cemu
-	./cemu ./c8games/BLINKY
-
 cemu: cemu.c
-	$(CC) $(CWARN) -std=gnu2x -O3 -o $@ $^ $(INCLUDE) $(INCLUDELIB) $(LIBS)
+	$(CC) $(CWARN) $(CCOPS) $@ $^ $(INCLUDE) $(INCLUDELIB) $(LIBS)
 
 clean:
 	rm -rf cemu
-
-
-
