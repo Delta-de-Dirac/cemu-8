@@ -315,7 +315,14 @@ int main(int argc, char * argv[]){
                     if (regV[destReg] != cmpVal) {
                         regPC += 2;
                     }
-
+                    break;
+                }
+                case 0x5: {
+                    uint8_t x  = (inst & 0x0F00) >> 8;
+                    uint8_t y  = (inst & 0x00F0) >> 4;
+                    if (regV[x] == regV[y]) {
+                        regPC += 2;
+                    }
                     break;
                 }
                 case 0x6: {
@@ -338,6 +345,10 @@ int main(int argc, char * argv[]){
                     switch ((inst & 0x000F)){
                         case 0x0: {
                             regV[x] = regV[y];
+                            break;
+                        }
+                        case 0x1: {
+                            regV[x] = regV[x] | regV[y];
                             break;
                         }
                         case 0x2: {
@@ -369,14 +380,52 @@ int main(int argc, char * argv[]){
                             }
                             break;
                         }
+                        case 0x6: {
+                            if ((regV[x] & 1) == 1){
+                                regV[0xF] = 1;
+                            } else {
+                                regV[0xF] = 0;
+                            }
+                            regV[x]  = regV[x]  >> 1;
+                            break;
+                        }
+                        case 0x7: {
+                            if (regV[y] > regV[x]){
+                                regV[0xF] = 1;
+                            } else {
+                                regV[0xF] = 0;
+                            }
+                            regV[x]  = regV[y] - regV[x];
+                            break;
+                        }
+                        case 0xE: {
+                            if ((regV[x] & (1 << 7)) != 0){
+                                regV[0xF] = 1;
+                            } else {
+                                regV[0xF] = 0;
+                            }
+                            regV[x]  = regV[x]  << 1;
+                            break;
+                        }
                         default:
                             printf("unknown inst: %04X\n", inst);
                             return 4;
                     }
                     break;
                 }
+                case 0x9: {
+                    uint8_t x  = (inst & 0x0F00) >> 8;
+                    uint8_t y  = (inst & 0x00F0) >> 4;
+                    if (regV[x] != regV[y]) {
+                        regPC += 2;
+                    }
+                    break;
+                }
                 case 0xA:
                     regI = inst & 0x0FFF;
+                    break;
+                case 0xB:
+                    regPC = (inst & 0x0FFF) + regV[0];
                     break;
                 case 0xC: {
                     int const r = rand() & 0xFF;

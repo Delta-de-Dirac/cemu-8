@@ -8,7 +8,7 @@ LIBS = -lm -lraylib
 all: cemu
 
 run: cemu
-	./cemu ./c8games/WIPEOFF
+	./cemu ./c8games/BLINKY
 
 cemu: cemu.c
 	$(CC) $(CWARN) -std=gnu2x -O3 -o $@ $^ $(INCLUDE) $(INCLUDELIB) $(LIBS)
