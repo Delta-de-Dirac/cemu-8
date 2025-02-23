@@ -1,5 +1,5 @@
 CC = clang
-CCOPS = -std=gnu2x -O3 -o
+CCOPS = -std=gnu23 -O3 -o
 CWARN = -Werror -Wall -Wextra -pedantic
 
 INCLUDE =
