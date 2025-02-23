@@ -238,9 +238,6 @@ int main(int argc, char * argv[]){
 
     printf("Running program\n");
     while(!WindowShouldClose()) {
-        
-        printf("%d\n", regSound);
-        
         if (regSound > 0) {
             ResumeMusicStream(music);
         } else {
