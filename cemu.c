@@ -22,6 +22,10 @@ uint16_t regPC = 0;
 uint16_t regSP = 0;
 uint16_t stack[16] = {0};
 
+uint8_t const tone_data[] = {
+    #embed "tone.ogg"
+};
+
 uint32_t const maxRomLen           = (0xFFF - 0x200 + 1);
 uint16_t const programStartAddr    = 0x200;
 uint16_t const digitSpriteAddr[16] = {
@@ -81,6 +85,14 @@ int main(int argc, char * argv[]){
     srand(time(NULL));
 
     InitWindow(WIDTH*PIXEL_SIZE, HEIGHT*PIXEL_SIZE, "cemu");
+    InitAudioDevice();
+    Music music = LoadMusicStreamFromMemory(".ogg", tone_data, (int) sizeof tone_data); 
+    SetMusicVolume(
+        music,
+        0.5
+    );
+    music.looping = true;
+    PlayMusicStream(music);
     SetTargetFPS(displayFPS);
 
     printf("Hello, CEMU-8!\n");
@@ -226,6 +238,17 @@ int main(int argc, char * argv[]){
 
     printf("Running program\n");
     while(!WindowShouldClose()) {
+        
+        printf("%d\n", regSound);
+        
+        if (regSound > 0) {
+            ResumeMusicStream(music);
+        } else {
+            PauseMusicStream(music);
+        }
+        
+        UpdateMusicStream(music);
+        
         for(uint32_t k = 0; k < instPerFrame; k++){
             timeElapsed += 1.0/(displayFPS*instPerFrame);
             timerTick += 1.0/(displayFPS*instPerFrame);
@@ -233,6 +256,9 @@ int main(int argc, char * argv[]){
                 timerTick -= 1.0/60.0;
                 if (regDelay > 0) {
                     regDelay -= 1;
+                }
+                if (regSound > 0) {
+                    regSound -= 1;
                 }
             }
 
@@ -429,6 +455,10 @@ int main(int argc, char * argv[]){
                         }
                         case 0x15: {
                             regDelay = regV[x];
+                            break;
+                        }
+                        case 0x18: {
+                            regSound = regV[x];
                             break;
                         }
                         case 0x1E: {

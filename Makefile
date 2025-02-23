@@ -11,7 +11,7 @@ run: cemu
 	./cemu ./c8games/WIPEOFF
 
 cemu: cemu.c
-	$(CC) $(CWARN) -O3 -o $@ $^ $(INCLUDE) $(INCLUDELIB) $(LIBS)
+	$(CC) $(CWARN) -std=gnu2x -O3 -o $@ $^ $(INCLUDE) $(INCLUDELIB) $(LIBS)
 
 clean:
 	rm -rf cemu
